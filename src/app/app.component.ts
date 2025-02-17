@@ -1,12 +1,37 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterOutlet } from '@angular/router';
+import { IntroComponent } from './shared/intro/intro.component';
+
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, IntroComponent],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  styleUrl: './app.component.css',
+  standalone: true
+
 })
 export class AppComponent {
-  title = 'frontend';
+  isLoading = true;
+  showIntro = true;
+
+  constructor(private router: Router) {
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationStart) {
+        this.isLoading = true;
+      } else if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
+        this.isLoading = false;
+      }
+    });
+  }
+
+  ngOnInit() {
+    setTimeout(() => {
+      this.showIntro = false;
+    }, 6000); // Show intro for 5 seconds
+  }
+
+  onActivate(event: any) {
+    window.scroll(0, 0);
+  }
 }
