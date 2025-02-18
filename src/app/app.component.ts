@@ -28,7 +28,7 @@ export class AppComponent {
   ngOnInit() {
     setTimeout(() => {
       this.showIntro = false;
-    }, 6000); // Show intro for 5 seconds
+    }, 5000);
   }
 
   onActivate(event: any) {
