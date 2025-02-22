@@ -1,14 +1,17 @@
 import { Component } from '@angular/core';
-import { timeSeriesData, timeSeriesData2, timeSeriesData3, timeSeriesData4, timeSeriesData5, timeSeriesData6 } from '../../../models/mock';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { NGX_ECHARTS_CONFIG, NgxEchartsModule } from 'ngx-echarts';
+import { AirQualityService } from '../../../services/air-quality.service';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-page-air-quality',
   standalone: true,
   imports: [
     CommonModule,
-    NgxEchartsModule
+    FormsModule,
+    NgxEchartsModule,
   ],
   providers: [
     {
@@ -23,20 +26,102 @@ import { NGX_ECHARTS_CONFIG, NgxEchartsModule } from 'ngx-echarts';
 })
 export class PageAirQualityComponent {
 
-  co = timeSeriesData //CO (mg/m^3): Carbon monoxide concentration.
-  pt08s1 = timeSeriesData2 //PT08.S1 (CO): Tin oxide concentration.
-  nmhc = timeSeriesData2 //Non-Methanic Hydrocarbons (NMHC): Concentration levels.
-  c6h6 = timeSeriesData4 //Benzene (mg/m^3): Benzene concentration.
-  pt08s2 = timeSeriesData5 //PT08.S2 (NMHC): Titania concentration.
-  nox = timeSeriesData6 //Nitrogen oxides (NOx): Concentration levels.
+  constructor(private airQualityService: AirQualityService) { }
+
+  showMetrics = true;
+
+  startDate: string = '2004-10-01';
+  endDate: string = '2004-11-01';
+
+  cols = [
+    { field: 'CO_GT', selected: false, data: [] },
+    { field: 'PT08_S1_CO', selected: false, data: [] },
+    { field: 'NMHC_GT', selected: false, data: [] },
+    { field: 'C6H6_GT', selected: false, data: [] },
+    { field: 'PT08_S2_NMHC', selected: false, data: [] },
+    { field: 'NOx_GT', selected: false, data: [] },
+    { field: 'PT08_S3_NOx', selected: false, data: [] },
+    { field: 'NO2_GT', selected: false, data: [] },
+    { field: 'PT08_S4_NO2', selected: false, data: [] },
+    { field: 'PT08_S5_O3', selected: false, data: [] },
+    { field: 'T', selected: false, data: [] },
+    { field: 'RH', selected: false, data: [] },
+    { field: 'AH', selected: false, data: [] }
+  ]
+
+  onFilter() {
+    console.log('Filter applied');
+
+    this.cols.forEach(col => {
+      if (col.selected) {
+        this.fetchMetrics(col);
+      }
+    });
+
+  }
+
+  onColumnSelected($event: any, col: any) {
+    console.log('Column selected', $event.target.checked, col);
+    if ($event.target.checked) {
+      this.fetchMetrics(col);
+    } else {
+      col.data = [];
+      this.updateChart();
+    }
+
+  }
+
+  fetchMetrics(col: any) {
+    if (col.selected) {
+      this.airQualityService.fetchData(col.field, this.startDate, this.endDate)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(data => {
+          col.data = data;
+          this.updateChart();
+        });
+    } else {
+      col.data = [];
+      this.updateChart();
+    }
+
+  }
+
+  normalizeData(data: any[]): any[] {
+    const values = data.map(item => item[1]);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    return data.map(item => [item[0], (item[1] - min) / (max - min)]);
+  }
 
 
   chartOption: any;
 
   ngOnInit(): void {
+    this.updateChart();
+  }
+
+  updateChart() {
+    const selectedMetrics = this.cols.filter(col => col.selected);
+    const series = selectedMetrics.map(metric => ({
+      name: metric.field,
+      type: 'line',
+      data: metric.data.map(item => item[1]),
+      markPoint: {
+        data: [
+          { type: 'max', name: 'Max' },
+          { type: 'min', name: 'Min' }
+        ]
+      },
+      markLine: {
+        data: [
+          { type: 'average', name: 'Average' }
+        ]
+      }
+    }));
+
     this.chartOption = {
       title: {
-        text: 'Air Quality Time Series'
+        text: ''
       },
       tooltip: {
         trigger: 'axis',
@@ -49,7 +134,7 @@ export class PageAirQualityComponent {
         }
       },
       legend: {
-        data: ['CO', 'PT08.S1', 'NMHC', 'C6H6', 'PT08.S2', 'NOx']
+        data: selectedMetrics.map(metric => metric.field)
       },
       toolbox: {
         feature: {
@@ -60,7 +145,6 @@ export class PageAirQualityComponent {
         }
       },
       grid: {
-        top: '20%',
         left: '3%',
         right: '4%',
         bottom: '3%',
@@ -68,109 +152,12 @@ export class PageAirQualityComponent {
       },
       xAxis: {
         type: 'category',
-        data: this.co.map(item => item[0])
+        data: this.cols[0].data.map(item => item[0])
       },
       yAxis: {
         type: 'value'
       },
-      series: [
-        {
-          name: 'CO',
-          type: 'line',
-          data: this.co.map(item => item[1]),
-          markPoint: {
-            data: [
-              { type: 'max', name: 'Max' },
-              { type: 'min', name: 'Min' }
-            ]
-          },
-          markLine: {
-            data: [
-              { type: 'average', name: 'Average' }
-            ]
-          }
-        },
-        {
-          name: 'PT08.S1',
-          type: 'line',
-          data: this.pt08s1.map(item => item[1]),
-          markPoint: {
-            data: [
-              { type: 'max', name: 'Max' },
-              { type: 'min', name: 'Min' }
-            ]
-          },
-          markLine: {
-            data: [
-              { type: 'average', name: 'Average' }
-            ]
-          }
-        },
-        {
-          name: 'NMHC',
-          type: 'line',
-          data: this.nmhc.map(item => item[1]),
-          markPoint: {
-            data: [
-              { type: 'max', name: 'Max' },
-              { type: 'min', name: 'Min' }
-            ]
-          },
-          markLine: {
-            data: [
-              { type: 'average', name: 'Average' }
-            ]
-          }
-        },
-        {
-          name: 'C6H6',
-          type: 'line',
-          data: this.c6h6.map(item => item[1]),
-          markPoint: {
-            data: [
-              { type: 'max', name: 'Max' },
-              { type: 'min', name: 'Min' }
-            ]
-          },
-          markLine: {
-            data: [
-              { type: 'average', name: 'Average' }
-            ]
-          }
-        },
-        {
-          name: 'PT08.S2',
-          type: 'line',
-          data: this.pt08s2.map(item => item[1]),
-          markPoint: {
-            data: [
-              { type: 'max', name: 'Max' },
-              { type: 'min', name: 'Min' }
-            ]
-          },
-          markLine: {
-            data: [
-              { type: 'average', name: 'Average' }
-            ]
-          }
-        },
-        {
-          name: 'NOx',
-          type: 'line',
-          data: this.nox.map(item => item[1]),
-          markPoint: {
-            data: [
-              { type: 'max', name: 'Max' },
-              { type: 'min', name: 'Min' }
-            ]
-          },
-          markLine: {
-            data: [
-              { type: 'average', name: 'Average' }
-            ]
-          }
-        }
-      ],
+      series: series,
       dataZoom: [
         {
           type: 'slider',
@@ -184,6 +171,13 @@ export class PageAirQualityComponent {
         }
       ]
     };
+  }
+
+  private destroy$ = new Subject<void>();
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
 }

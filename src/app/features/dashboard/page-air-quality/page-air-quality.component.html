@@ -1,4 +1,101 @@
-<div>
-  <h2>Air Quality Time Series</h2>
-  <div echarts [options]="chartOption" class="echart"></div>
+<div class="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow-lg">
+  <!-- Header Section with improved visual hierarchy -->
+  <div
+    class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8"
+  >
+    <div>
+      <h2 class="text-3xl font-bold text-gray-800 mb-2">
+        Air Quality Time Series
+      </h2>
+      <p class="text-gray-600">
+        Monitor and analyze air quality metrics over time
+      </p>
+    </div>
+
+    <!-- Date Range and Filter Controls -->
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-wrap gap-3">
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-700">Start Date</label>
+          <input
+            type="date"
+            class="px-3 py-[6px] bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            [(ngModel)]="startDate"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-700">End Date</label>
+          <input
+            type="date"
+            class="px-3 py-[6px] bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            [(ngModel)]="endDate"
+          />
+        </div>
+        <div class="flex items-end">
+          <button
+            class="flex items-center px-4 py-[6px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-medium"
+            (click)="onFilter()"
+          >
+            <svg
+              class="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+              />
+            </svg>
+            Apply Filter
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics Selection Section -->
+  <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-lg font-semibold text-gray-700">Metrics Selection</h3>
+      <div class="flex gap-2">
+        <button
+          class="text-sm text-blue-600 hover:text-blue-800 font-medium material-icons cursor-pointer"
+          *ngIf="showMetrics"
+          (click)="showMetrics = !showMetrics"
+        >
+          keyboard_arrow_up
+        </button>
+
+        <button
+          class="text-sm text-blue-600 hover:text-blue-800 font-medium material-icons cursor-pointer"
+          *ngIf="!showMetrics"
+          (click)="showMetrics = !showMetrics"
+        >
+          keyboard_arrow_down
+        </button>
+      </div>
+    </div>
+    <div
+      class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1"
+      *ngIf="showMetrics"
+    >
+      <label
+        class="flex items-center gap-2 hover:bg-white rounded transition-colors cursor-pointer"
+        *ngFor="let item of cols"
+      >
+        <input
+          type="checkbox"
+          class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+          [(ngModel)]="item.selected"
+          (change)="onColumnSelected($event, item)"
+        />
+        <span class="text-gray-700">{{ item.field }}</span>
+      </label>
+    </div>
+  </div>
+
+  <div echarts [options]="chartOption" class="echart mt-6"></div>
 </div>

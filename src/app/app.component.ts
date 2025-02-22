@@ -28,7 +28,7 @@ export class AppComponent {
   ngOnInit() {
     setTimeout(() => {
       this.showIntro = false;
-    }, 5000);
+    }, 3000);
   }
 
   onActivate(event: any) {
